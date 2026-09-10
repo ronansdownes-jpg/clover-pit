@@ -183,18 +183,25 @@ async function startGame() {
 }
 
 startGame();
+<script>
+const canvas = document.getElementById("unity-canvas");
+
+// Lock the mouse when the player clicks the game
 canvas.addEventListener("click", function () {
     if (document.pointerLockElement !== canvas) {
         canvas.requestPointerLock();
     }
 });
 
+// Keep track of whether the mouse is locked
 document.addEventListener("pointerlockchange", function () {
     if (document.pointerLockElement === canvas) {
-        console.log("Mouse locked to game");
+        console.log("Mouse locked");
     } else {
-        console.log("Mouse released");
+        console.log("Mouse unlocked");
     }
+});
+</script>
 });
 </script>
 </body>
