@@ -1,9 +1,11 @@
+```html
 <!DOCTYPE html>
 <html lang="en-us">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>CloverPit</title>
+
   <link rel="shortcut icon" href="TemplateData/favicon.ico">
   <link rel="stylesheet" href="TemplateData/style.css">
 
@@ -52,7 +54,7 @@
       cursor: default;
     }
 
-    /* Mouse locked message */
+    /* Mouse lock message */
     #mouse-lock-message {
       position: fixed;
       top: 15px;
@@ -72,50 +74,88 @@
 
 <body>
 
-  <div id="loading-text">LOADING... 0 MB</div>
+  <div id="loading-text">
+    LOADING... 0 MB
+  </div>
+
   <div id="error"></div>
 
   <div id="unity-container">
-    <canvas id="unity-canvas" width="960" height="540" tabindex="-1"></canvas>
+
+    <canvas
+      id="unity-canvas"
+      width="960"
+      height="540"
+      tabindex="-1">
+    </canvas>
 
     <div id="unity-loading-bar">
       <div id="unity-logo"></div>
+
       <div id="unity-progress-bar-empty">
         <div id="unity-progress-bar-full"></div>
       </div>
     </div>
 
     <div id="unity-warning"></div>
+
   </div>
 
   <div id="mouse-lock-message">
     Mouse locked — press ESC to unlock
   </div>
 
+
 <script>
 "use strict";
 
-const loadingText = document.getElementById("loading-text");
-const errorBox = document.getElementById("error");
-const canvas = document.getElementById("unity-canvas");
-const loadingBar = document.getElementById("unity-loading-bar");
-const progressBar = document.getElementById("unity-progress-bar-full");
-const mouseLockMessage = document.getElementById("mouse-lock-message");
+
+/* ==============================
+   ELEMENTS
+   ============================== */
+
+const loadingText =
+  document.getElementById("loading-text");
+
+const errorBox =
+  document.getElementById("error");
+
+const canvas =
+  document.getElementById("unity-canvas");
+
+const loadingBar =
+  document.getElementById("unity-loading-bar");
+
+const progressBar =
+  document.getElementById(
+    "unity-progress-bar-full"
+  );
+
+const mouseLockMessage =
+  document.getElementById(
+    "mouse-lock-message"
+  );
+
 
 let loadedBytes = 0;
 
 
-/* =========================
-   MOUSE LOCK / POINTER LOCK
-   ========================= */
+/* ==============================
+   MOUSE LOCK
+   ============================== */
 
 // Click the game to lock the mouse
 canvas.addEventListener("click", function () {
 
   if (document.pointerLockElement !== canvas) {
 
-    canvas.requestPointerLock().catch(function(err) {
-      console.log("Mouse lock failed:", err);
+    canvas.requestPointerLock().catch(function (error) {
+
+      console.log(
+        "Mouse lock failed:",
+        error
+      );
+
     });
 
   }
@@ -123,57 +163,86 @@ canvas.addEventListener("click", function () {
 });
 
 
-// Detect when mouse lock changes
-document.addEventListener("pointerlockchange", function () {
+// Detect mouse lock / unlock
+document.addEventListener(
+  "pointerlockchange",
+  function () {
 
-  if (document.pointerLockElement === canvas) {
+    if (
+      document.pointerLockElement === canvas
+    ) {
 
-    console.log("Mouse locked");
+      console.log("Mouse locked");
 
-    canvas.style.cursor = "none";
+      canvas.style.cursor = "none";
 
-    mouseLockMessage.style.display = "block";
+      mouseLockMessage.style.display =
+        "block";
 
-  } else {
+    } else {
 
-    console.log("Mouse unlocked");
+      console.log("Mouse unlocked");
 
-    canvas.style.cursor = "default";
+      canvas.style.cursor =
+        "default";
 
-    mouseLockMessage.style.display = "none";
+      mouseLockMessage.style.display =
+        "none";
+
+    }
 
   }
-
-});
+);
 
 
 // Detect pointer-lock errors
-document.addEventListener("pointerlockerror", function () {
+document.addEventListener(
+  "pointerlockerror",
+  function () {
 
-  console.log("Pointer Lock error");
+    console.log(
+      "Pointer Lock was blocked."
+    );
 
-});
+  }
+);
 
+
+/* ==============================
+   ERROR HANDLING
+   ============================== */
 
 function showError(message) {
+
   console.error(message);
 
-  errorBox.style.display = "block";
+  errorBox.style.display =
+    "block";
 
   errorBox.textContent =
     "Clover Pit could not start.\n\n" +
     message +
     "\n\nCheck that the complete Build folder was uploaded to GitHub Pages.";
 
-  loadingText.textContent = "ERROR";
+  loadingText.textContent =
+    "ERROR";
 }
 
 
+/* ==============================
+   DOWNLOAD BUILD PART
+   ============================== */
+
 async function fetchPart(url) {
 
-  const response = await fetch(url, {
-    cache: "no-cache"
-  });
+  const response =
+    await fetch(
+      url,
+      {
+        cache: "no-cache"
+      }
+    );
+
 
   if (!response.ok) {
 
@@ -187,6 +256,7 @@ async function fetchPart(url) {
 
   }
 
+
   if (!response.body) {
 
     throw new Error(
@@ -196,17 +266,26 @@ async function fetchPart(url) {
 
   }
 
-  const reader = response.body.getReader();
+
+  const reader =
+    response.body.getReader();
+
 
   const chunks = [];
 
   let size = 0;
 
+
   while (true) {
 
-    const { done, value } = await reader.read();
+    const {
+      done,
+      value
+    } = await reader.read();
+
 
     if (done) break;
+
 
     chunks.push(value);
 
@@ -214,35 +293,58 @@ async function fetchPart(url) {
 
     loadedBytes += value.length;
 
+
     loadingText.textContent =
       "LOADING... " +
-      (loadedBytes / 1048576).toFixed(1) +
+      (
+        loadedBytes /
+        1048576
+      ).toFixed(1) +
       " MB";
 
   }
 
-  const result = new Uint8Array(size);
+
+  const result =
+    new Uint8Array(size);
+
 
   let offset = 0;
 
+
   for (const chunk of chunks) {
 
-    result.set(chunk, offset);
+    result.set(
+      chunk,
+      offset
+    );
 
     offset += chunk.length;
 
   }
 
-  return result;
 
+  return result;
 }
 
 
-async function mergeParts(baseName, partCount) {
+/* ==============================
+   MERGE BUILD PARTS
+   ============================== */
+
+async function mergeParts(
+  baseName,
+  partCount
+) {
 
   const parts = [];
 
-  for (let i = 1; i <= partCount; i++) {
+
+  for (
+    let i = 1;
+    i <= partCount;
+    i++
+  ) {
 
     parts.push(
       await fetchPart(
@@ -255,65 +357,86 @@ async function mergeParts(baseName, partCount) {
 
   }
 
+
   const total =
     parts.reduce(
       (sum, part) =>
-        sum + part.byteLength,
+        sum +
+        part.byteLength,
       0
     );
+
 
   const merged =
     new Uint8Array(total);
 
+
   let offset = 0;
+
 
   for (const part of parts) {
 
-    merged.set(part, offset);
+    merged.set(
+      part,
+      offset
+    );
 
-    offset += part.byteLength;
+    offset +=
+      part.byteLength;
 
   }
+
 
   return URL.createObjectURL(
     new Blob([merged])
   );
-
 }
 
+
+/* ==============================
+   START UNITY GAME
+   ============================== */
 
 async function startGame() {
 
   try {
 
-    loadingBar.style.display = "block";
+    loadingBar.style.display =
+      "block";
 
-    // The repository contains three parts for both files.
+
+    // Load the three data parts
     const dataUrl =
       await mergeParts(
         "CloverPit.data",
         3
       );
 
+
+    // Load the three WASM parts
     const wasmUrl =
       await mergeParts(
         "CloverPit.wasm",
         3
       );
 
+
     loadingText.textContent =
       "STARTING GAME...";
+
 
     const config = {
 
       arguments: [],
 
-      dataUrl: dataUrl,
+      dataUrl:
+        dataUrl,
 
       frameworkUrl:
         "Build/CloverPit.framework.js",
 
-      codeUrl: wasmUrl,
+      codeUrl:
+        wasmUrl,
 
       streamingAssetsUrl:
         "StreamingAssets",
@@ -328,74 +451,89 @@ async function startGame() {
         "1.3",
 
       showBanner:
-        function() {}
+        function () {}
 
     };
 
 
     const script =
-      document.createElement("script");
+      document.createElement(
+        "script"
+      );
+
 
     script.src =
       "Build/CloverPit.loader.js";
 
 
-    script.onload = function() {
+    script.onload =
+      function () {
 
-      createUnityInstance(
-        canvas,
-        config,
-        function(progress) {
+        createUnityInstance(
+          canvas,
+          config,
+          function (progress) {
 
-          progressBar.style.width =
-            (progress * 100) + "%";
+            progressBar.style.width =
+              (
+                progress * 100
+              ) +
+              "%";
 
-          loadingText.textContent =
-            "STARTING GAME... " +
-            Math.round(
-              progress * 100
-            ) +
-            "%";
 
-        }
+            loadingText.textContent =
+              "STARTING GAME... " +
+              Math.round(
+                progress * 100
+              ) +
+              "%";
 
-      ).then(function() {
+          }
 
-        loadingBar.style.display =
-          "none";
+        )
+        .then(function () {
 
-        loadingText.style.display =
-          "none";
+          loadingBar.style.display =
+            "none";
 
-      }).catch(function(err) {
+          loadingText.style.display =
+            "none";
+
+        })
+        .catch(function (err) {
+
+          showError(
+            err &&
+            err.message
+              ? err.message
+              : String(err)
+          );
+
+        });
+
+      };
+
+
+    script.onerror =
+      function () {
 
         showError(
-          err && err.message
-            ? err.message
-            : String(err)
+          "Build/CloverPit.loader.js could not be loaded."
         );
 
-      });
-
-    };
+      };
 
 
-    script.onerror = function() {
-
-      showError(
-        "Build/CloverPit.loader.js could not be loaded."
-      );
-
-    };
-
-
-    document.body.appendChild(script);
+    document.body.appendChild(
+      script
+    );
 
 
   } catch (err) {
 
     showError(
-      err && err.message
+      err &&
+      err.message
         ? err.message
         : String(err)
     );
@@ -405,9 +543,15 @@ async function startGame() {
 }
 
 
+/* ==============================
+   START
+   ============================== */
+
 startGame();
 
 </script>
 
 </body>
 </html>
+```
+
