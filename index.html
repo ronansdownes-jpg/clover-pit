@@ -1,4 +1,3 @@
-```html
 <!DOCTYPE html>
 <html lang="en-us">
 <head>
@@ -52,6 +51,22 @@
       display: block;
       cursor: default;
     }
+
+    /* Mouse locked message */
+    #mouse-lock-message {
+      position: fixed;
+      top: 15px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0, 0, 0, 0.8);
+      color: white;
+      padding: 10px 16px;
+      border-radius: 8px;
+      font: 14px Arial, sans-serif;
+      z-index: 9999;
+      display: none;
+      pointer-events: none;
+    }
   </style>
 </head>
 
@@ -65,13 +80,16 @@
 
     <div id="unity-loading-bar">
       <div id="unity-logo"></div>
-
       <div id="unity-progress-bar-empty">
         <div id="unity-progress-bar-full"></div>
       </div>
     </div>
 
     <div id="unity-warning"></div>
+  </div>
+
+  <div id="mouse-lock-message">
+    Mouse locked — press ESC to unlock
   </div>
 
 <script>
@@ -82,47 +100,62 @@ const errorBox = document.getElementById("error");
 const canvas = document.getElementById("unity-canvas");
 const loadingBar = document.getElementById("unity-loading-bar");
 const progressBar = document.getElementById("unity-progress-bar-full");
+const mouseLockMessage = document.getElementById("mouse-lock-message");
 
 let loadedBytes = 0;
 
 
-/* =========================================
+/* =========================
    MOUSE LOCK / POINTER LOCK
-   ========================================= */
+   ========================= */
 
-// Lock the mouse when the player clicks the game
+// Click the game to lock the mouse
 canvas.addEventListener("click", function () {
-    if (document.pointerLockElement !== canvas) {
-        canvas.requestPointerLock();
-    }
+
+  if (document.pointerLockElement !== canvas) {
+
+    canvas.requestPointerLock().catch(function(err) {
+      console.log("Mouse lock failed:", err);
+    });
+
+  }
+
 });
 
-// Keep track of whether the mouse is locked
+
+// Detect when mouse lock changes
 document.addEventListener("pointerlockchange", function () {
 
-    if (document.pointerLockElement === canvas) {
+  if (document.pointerLockElement === canvas) {
 
-        console.log("Mouse locked");
+    console.log("Mouse locked");
 
-        // Hide the normal cursor while playing
-        canvas.style.cursor = "none";
+    canvas.style.cursor = "none";
 
-    } else {
+    mouseLockMessage.style.display = "block";
 
-        console.log("Mouse unlocked");
+  } else {
 
-        // Show the cursor again when unlocked
-        canvas.style.cursor = "default";
-    }
+    console.log("Mouse unlocked");
+
+    canvas.style.cursor = "default";
+
+    mouseLockMessage.style.display = "none";
+
+  }
+
 });
 
 
-/* =========================================
-   ERROR HANDLING
-   ========================================= */
+// Detect pointer-lock errors
+document.addEventListener("pointerlockerror", function () {
+
+  console.log("Pointer Lock error");
+
+});
+
 
 function showError(message) {
-
   console.error(message);
 
   errorBox.style.display = "block";
@@ -135,10 +168,6 @@ function showError(message) {
   loadingText.textContent = "ERROR";
 }
 
-
-/* =========================================
-   LOAD FILE PART
-   ========================================= */
 
 async function fetchPart(url) {
 
@@ -155,6 +184,7 @@ async function fetchPart(url) {
       response.status +
       ")"
     );
+
   }
 
   if (!response.body) {
@@ -163,6 +193,7 @@ async function fetchPart(url) {
       "The browser could not read the response body for " +
       url
     );
+
   }
 
   const reader = response.body.getReader();
@@ -187,6 +218,7 @@ async function fetchPart(url) {
       "LOADING... " +
       (loadedBytes / 1048576).toFixed(1) +
       " MB";
+
   }
 
   const result = new Uint8Array(size);
@@ -198,15 +230,13 @@ async function fetchPart(url) {
     result.set(chunk, offset);
 
     offset += chunk.length;
+
   }
 
   return result;
+
 }
 
-
-/* =========================================
-   MERGE FILE PARTS
-   ========================================= */
 
 async function mergeParts(baseName, partCount) {
 
@@ -222,6 +252,7 @@ async function mergeParts(baseName, partCount) {
         i
       )
     );
+
   }
 
   const total =
@@ -241,17 +272,15 @@ async function mergeParts(baseName, partCount) {
     merged.set(part, offset);
 
     offset += part.byteLength;
+
   }
 
   return URL.createObjectURL(
     new Blob([merged])
   );
+
 }
 
-
-/* =========================================
-   START GAME
-   ========================================= */
 
 async function startGame() {
 
@@ -259,26 +288,21 @@ async function startGame() {
 
     loadingBar.style.display = "block";
 
-
-    // Load the three data parts
+    // The repository contains three parts for both files.
     const dataUrl =
       await mergeParts(
         "CloverPit.data",
         3
       );
 
-
-    // Load the three WASM parts
     const wasmUrl =
       await mergeParts(
         "CloverPit.wasm",
         3
       );
 
-
     loadingText.textContent =
       "STARTING GAME...";
-
 
     const config = {
 
@@ -289,8 +313,7 @@ async function startGame() {
       frameworkUrl:
         "Build/CloverPit.framework.js",
 
-      codeUrl:
-        wasmUrl,
+      codeUrl: wasmUrl,
 
       streamingAssetsUrl:
         "StreamingAssets",
@@ -306,71 +329,64 @@ async function startGame() {
 
       showBanner:
         function() {}
+
     };
 
 
     const script =
       document.createElement("script");
 
-
     script.src =
       "Build/CloverPit.loader.js";
 
 
-    script.onload =
-      function() {
+    script.onload = function() {
 
-        createUnityInstance(
-          canvas,
-          config,
+      createUnityInstance(
+        canvas,
+        config,
+        function(progress) {
 
-          function(progress) {
+          progressBar.style.width =
+            (progress * 100) + "%";
 
-            progressBar.style.width =
-              (progress * 100) +
-              "%";
+          loadingText.textContent =
+            "STARTING GAME... " +
+            Math.round(
+              progress * 100
+            ) +
+            "%";
 
-            loadingText.textContent =
-              "STARTING GAME... " +
-              Math.round(
-                progress * 100
-              ) +
-              "%";
-          }
+        }
 
-        ).then(
+      ).then(function() {
 
-          function() {
+        loadingBar.style.display =
+          "none";
 
-            loadingBar.style.display =
-              "none";
+        loadingText.style.display =
+          "none";
 
-            loadingText.style.display =
-              "none";
-          }
-
-        ).catch(
-
-          function(err) {
-
-            showError(
-              err &&
-              err.message
-                ? err.message
-                : String(err)
-            );
-          }
-        );
-      };
-
-
-    script.onerror =
-      function() {
+      }).catch(function(err) {
 
         showError(
-          "Build/CloverPit.loader.js could not be loaded."
+          err && err.message
+            ? err.message
+            : String(err)
         );
-      };
+
+      });
+
+    };
+
+
+    script.onerror = function() {
+
+      showError(
+        "Build/CloverPit.loader.js could not be loaded."
+      );
+
+    };
 
 
     document.body.appendChild(script);
@@ -379,18 +395,15 @@ async function startGame() {
   } catch (err) {
 
     showError(
-      err &&
-      err.message
+      err && err.message
         ? err.message
         : String(err)
     );
+
   }
+
 }
 
-
-/* =========================================
-   START
-   ========================================= */
 
 startGame();
 
@@ -398,4 +411,3 @@ startGame();
 
 </body>
 </html>
-```
